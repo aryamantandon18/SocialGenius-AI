@@ -20,11 +20,10 @@ SocialGenius AI is a powerful Next.js application that leverages AI to generate 
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
 - [Clerk](https://clerk.com/) - Authentication and user management
 - [Google Generative AI](https://ai.google.dev/) - AI model for content generation
-- [Drizzle ORM](https://orm.drizzle.team/) - TypeScript ORM for database management
+- [Prisma ORM](https://www.prisma.io/) - Type-safe ORM for database management
 - [Neon Database](https://neon.tech/) - Serverless Postgres database
 - [Stripe](https://stripe.com/) - Payment processing for subscriptions
 - [Lucide React](https://lucide.dev/) - Icon library
-
 ## Getting Started
 
 1. Clone the repository:
