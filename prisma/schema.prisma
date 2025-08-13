@@ -1,0 +1,44 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Users {
+  id               Int       @id @default(autoincrement())
+  stripeCustomerId String?   @unique
+  email            String    @unique
+  name             String?
+  points           Int       @default(200)
+  createdAt        DateTime  @default(now())
+
+  subscriptions    Subscriptions[]
+  generatedContent GeneratedContent[]
+}
+
+model Subscriptions {
+  id                  Int      @id @default(autoincrement())
+  userId              Int
+  stripeSubscriptionId String  @unique @db.VarChar(255)
+  plan                String   @db.VarChar(50)
+  status              String   @db.VarChar(50)
+  currentPeriodStart  DateTime
+  currentPeriodEnd    DateTime
+  cancelAtPeriodEnd   Boolean  @default(false)
+
+  user Users @relation(fields: [userId], references: [id])
+}
+
+model GeneratedContent {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  content     String
+  prompt      String
+  contentType String   @db.VarChar(50)
+  createdAt   DateTime @default(now())
+
+  user Users @relation(fields: [userId], references: [id])
+}
