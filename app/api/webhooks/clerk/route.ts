@@ -1,7 +1,6 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
-import { createOrUpdateUser } from "@/utils/db/actions";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -18,9 +17,7 @@ export async function POST(req: Request) {
   const svix_signature = headerPayload.get("svix-signature");
 
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response("Error occurred -- no svix headers", {
-      status: 400,
-    });
+    return new Response("Error occurred -- no svix headers", { status: 400 });
   }
 
   const payload = await req.json();
@@ -29,7 +26,6 @@ export async function POST(req: Request) {
   const wh = new Webhook(WEBHOOK_SECRET);
 
   let evt: WebhookEvent;
-
   try {
     evt = wh.verify(body, {
       "svix-id": svix_id,
@@ -38,9 +34,7 @@ export async function POST(req: Request) {
     }) as WebhookEvent;
   } catch (err) {
     console.error("Error verifying webhook:", err);
-    return new Response("Error occurred", {
-      status: 400,
-    });
+    return new Response("Error occurred", { status: 400 });
   }
 
   const eventType = evt.type;
@@ -51,8 +45,8 @@ export async function POST(req: Request) {
 
     if (email) {
       try {
+        const { createOrUpdateUser } = await import("@/utils/db/actions");
         await createOrUpdateUser(id, email, name);
-
         console.log(`User ${id} created/updated successfully`);
       } catch (error) {
         console.error("Error creating/updating user:", error);
@@ -60,9 +54,6 @@ export async function POST(req: Request) {
       }
     }
   }
-
-  // console.log(`Webhook with an ID of ${evt.data.id} and type of ${eventType}`);
-  // console.log("Webhook body:", body);
 
   return NextResponse.json(
     { message: "Webhook processed successfully" },
