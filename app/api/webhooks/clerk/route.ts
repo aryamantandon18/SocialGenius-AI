@@ -3,6 +3,9 @@ import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic'; // Disables static optimization
+export const runtime = 'nodejs'; // Ensures Node.js runtime (recommended for webhooks)
+
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
