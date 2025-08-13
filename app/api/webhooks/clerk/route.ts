@@ -4,12 +4,12 @@ import { WebhookEvent } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET!;
 
-  if (!WEBHOOK_SECRET) {
-    console.error("❌ Missing CLERK_WEBHOOK_SECRET. Check Vercel env vars.");
-    return new Response("Server misconfigured", { status: 500 });
-  }
+  // if (!WEBHOOK_SECRET) {
+  //   console.error("❌ Missing CLERK_WEBHOOK_SECRET. Check Vercel env vars.");
+  //   return new Response("Server misconfigured", { status: 500 });
+  // }
 
   const headerPayload = headers();
   const svix_id = headerPayload.get("svix-id");
