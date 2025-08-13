@@ -11,10 +11,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs'; // or 'edge' if preferred
 
 export async function POST(req: Request) {
   const body = await req.text();
-  const signature = headers().get("Stripe-Signature") as string;
+  const signature = headers().get("stripe-signature") as string; // Note: lowercase 'stripe-signature'
 
   if (!signature) {
     console.error("No Stripe signature found");
@@ -39,76 +40,59 @@ export async function POST(req: Request) {
 
   console.log(`Received event type: ${event.type}`);
 
+  // Handle checkout.session.completed event
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const userId = session.client_reference_id;
-    const subscriptionId = session.subscription as string;
-
-    if (!userId || !subscriptionId) {
-      console.error("Missing userId or subscriptionId in session", { session });
-      return NextResponse.json(
-        { error: "Invalid session data" },
-        { status: 400 }
-      );
-    }
-
     try {
-      console.log(`Retrieving subscription: ${subscriptionId}`);
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      console.log("Retrieved subscription:", subscription);
+      const session = event.data.object as Stripe.Checkout.Session;
+      const userId = session.client_reference_id;
+      const subscriptionId = session.subscription as string;
 
-      if (!subscription.items.data.length) {
-        console.error("No items found in subscription", { subscription });
+      if (!userId || !subscriptionId) {
+        console.error("Missing userId or subscriptionId in session", { session });
+        return NextResponse.json(
+          { error: "Invalid session data" },
+          { status: 400 }
+        );
+      }
+
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      const priceId = subscription.items.data[0]?.price.id;
+
+      if (!priceId) {
+        console.error("No price ID found in subscription items");
         return NextResponse.json(
           { error: "Invalid subscription data" },
           { status: 400 }
         );
       }
 
-      const priceId = subscription.items.data[0].price.id;
-      console.log(`Price ID: ${priceId}`);
+      // Define your price mappings
+      const priceMap: Record<string, { plan: string; points: number }> = {
+        "price_1PyFKGBibz3ZDixDAaJ3HO74": { plan: "Basic", points: 100 },
+        "price_1PyFN0Bibz3ZDixDqm9eYL8W": { plan: "Pro", points: 500 },
+      };
 
-      let plan: string;
-      let pointsToAdd: number;
-
-      // Map price IDs to plan names and points
-      switch (priceId) {
-        case "price_1PyFKGBibz3ZDixDAaJ3HO74":
-          plan = "Basic";
-          pointsToAdd = 100;
-          break;
-        case "price_1PyFN0Bibz3ZDixDqm9eYL8W":
-          plan = "Pro";
-          pointsToAdd = 500;
-          break;
-        default:
-          console.error("Unknown price ID", { priceId });
-          return NextResponse.json(
-            { error: "Unknown price ID" },
-            { status: 400 }
-          );
+      const selectedPlan = priceMap[priceId];
+      if (!selectedPlan) {
+        console.error("Unknown price ID", { priceId });
+        return NextResponse.json(
+          { error: "Unknown price ID" },
+          { status: 400 }
+        );
       }
 
-      console.log(`Creating/updating subscription for user ${userId}`);
-      const updatedSubscription = await createOrUpdateSubscription(
+      // Update subscription in database
+      await createOrUpdateSubscription(
         userId,
         subscriptionId,
-        plan,
+        selectedPlan.plan,
         "active",
         new Date(subscription.current_period_start * 1000),
         new Date(subscription.current_period_end * 1000)
       );
 
-      if (!updatedSubscription) {
-        console.error("Failed to create or update subscription");
-        return NextResponse.json(
-          { error: "Failed to create or update subscription" },
-          { status: 500 }
-        );
-      }
-
-      console.log(`Updating points for user ${userId}: +${pointsToAdd}`);
-      await updateUserPoints(userId, pointsToAdd);
+      // Update user points
+      await updateUserPoints(userId, selectedPlan.points);
 
       console.log(`Successfully processed subscription for user ${userId}`);
     } catch (error: any) {
