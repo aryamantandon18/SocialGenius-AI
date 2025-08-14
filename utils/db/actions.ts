@@ -1,6 +1,3 @@
-// import { db } from "./dbConfig";
-// import { Users, Subscriptions, GeneratedContent } from "./schema";
-// import { eq, sql, and, desc } from "drizzle-orm";
 'use server';
 
 import { prisma } from "../../lib/prisma";

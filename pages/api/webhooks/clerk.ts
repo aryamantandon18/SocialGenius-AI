@@ -4,7 +4,7 @@ import { Webhook } from "svix";
 
 export const config = {
   api: {
-    bodyParser: false, // Raw body is required for webhook verification
+    bodyParser: false, 
   },
 };
 
@@ -26,21 +26,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Collect raw body as Buffer
-  const rawBuffer = await new Promise<Buffer>((resolve, reject) => {
+  const rawBuffer: Buffer = await new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+    req.on("data", (chunk: Buffer) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
-
-  // Cast Buffer to Uint8Array to satisfy svix type
-  const rawBody = rawBuffer as unknown as Uint8Array;
 
   const wh = new Webhook(WEBHOOK_SECRET);
 
   let evt: any;
   try {
-    evt = wh.verify(rawBody, {
+    evt = wh.verify(rawBuffer, {
       "svix-id": svixId,
       "svix-timestamp": svixTimestamp,
       "svix-signature": svixSignature,

@@ -49,7 +49,7 @@ export default function PricingPage() {
     if (!isSignedIn) {
       return;
     }
-    console.log("Line 52 ..." + priceId , user);
+    // console.log("Line 52 ..." + priceId , user);
     setIsLoading(true);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/create-checkout-session`, {
